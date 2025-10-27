@@ -1,12 +1,11 @@
 # @glowhop/observables
 
-Lightweight primitives for modelling observable values, lists, and maps in TypeScript. The package ships idiomatic React hooks on top of the core API so you can keep business logic framework-agnostic while still building delightful UIs.
+Lightweight primitives for modelling observable values, lists, and maps in TypeScript. Keep your business logic framework-agnostic while still composing reactive flows easily.
 
 ## Features
 
-- Tiny, framework-independent `Observable`, `ObservableList`, and `ObservableMap` classes.
+- Tiny, framework-agnostic `Observable`, `ObservableList`, and `ObservableMap` classes.
 - Ergonomic helpers for item-level subscriptions, iteration, and async mapping.
-- React hooks (`useValue`, `useItem`, `useKey`, `useChange`) that stay in sync with your core observables.
 - Fully typed ESM and CommonJS builds with sourcemaps.
 
 ## Installation
@@ -19,7 +18,7 @@ yarn add @glowhop/observables
 pnpm add @glowhop/observables
 ```
 
-The package marks React as a peer dependency. Install `react` in your project if you plan to use the React hooks.
+The library is independent of any UI framework; use it directly or build thin adapters for your favourite renderer.
 
 ## Quick start
 
@@ -57,35 +56,7 @@ settings.setItem("theme", "light"); // light
 settings.removeItem("theme"); // undefined
 ```
 
-## React hooks
-
-```tsx
-import { useValue } from "@glowhop/observables/react";
-import { Observable } from "@glowhop/observables";
-
-const counter = new Observable(0);
-
-export function Counter() {
-	const value = useValue(counter);
-
-	return (
-		<button type="button" onClick={() => counter.set((prev) => prev + 1)}>
-			Clicked {value} times
-		</button>
-	);
-}
-```
-
-Hooks leverage the same observables you use outside of React, making it straightforward to share logic across environments.
-
-### Available hooks
-
-- `useValue(observable, accessor?, deps?)` - Subscribe to an observable and keep the component up to date.
-- `useItem(observableList, index)` - Observe a single item from an `ObservableList`.
-- `useKey(observableMap, key)` - Observe a specific entry from an `ObservableMap`.
-- `useChange(observable, callback, deps?)` - Run an effect when the observable changes.
-
-Refer to the TypeScript definitions in `dist/` or the source files in `src/` for the complete API surface.
+Refer to the TypeScript definitions in `dist/` or the source files in `src/` for the complete API surface. Since the API stays framework-neutral you can pair it with React, Vue, Solid, Svelte, or any custom renderer by wiring subscriptions into your own hooks/effects.
 
 ## Development
 
