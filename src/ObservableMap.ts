@@ -24,13 +24,11 @@ export default class ObservableMap<
 
   public removeItem(key: K) {
     this._value.delete(key);
-
     this.emitKey(key);
   }
 
   public clear() {
     this._value.clear();
-
     this.emit();
   }
 
@@ -47,7 +45,6 @@ export default class ObservableMap<
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
-
     for (const [key, listeners] of this._keyListeners) {
       listeners.forEach((fn) => {
         fn(this.getItem(key));
@@ -59,7 +56,6 @@ export default class ObservableMap<
     this._keyListeners.get(key)?.forEach((fn) => {
       fn(this.getItem(key));
     });
-
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
@@ -69,12 +65,10 @@ export default class ObservableMap<
     if (!this._keyListeners.has(key)) {
       this._keyListeners.set(key, new Set());
     }
-
     const listeners = this._keyListeners.get(key);
     if (listeners) {
       listeners.add(fn);
     }
-
     return () => {
       this.unsubscribeKey(key, fn);
     };
@@ -82,7 +76,6 @@ export default class ObservableMap<
 
   public unsubscribeKey(key: K, fn: (value: T | undefined) => void) {
     if (!this._keyListeners.has(key)) return;
-
     const listeners = this._keyListeners.get(key);
     if (listeners) {
       listeners.delete(fn);

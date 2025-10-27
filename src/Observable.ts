@@ -21,7 +21,6 @@ export default class Observable<T> extends Base<T> {
 
   public subscribe(fn: (value: T) => void): () => void {
     this._listeners.add(fn);
-
     return () => {
       this.unsubscribe(fn);
     };

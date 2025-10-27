@@ -42,7 +42,6 @@ export default class ObservableList<T> extends Observable<Array<T>> {
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
-
     for (const [key, listeners] of this._indexListeners) {
       listeners.forEach((fn) => {
         fn(this.getItem(key));
@@ -54,7 +53,6 @@ export default class ObservableList<T> extends Observable<Array<T>> {
     this._indexListeners.get(index)?.forEach((fn) => {
       fn(this.getItem(index));
     });
-
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
@@ -79,7 +77,6 @@ export default class ObservableList<T> extends Observable<Array<T>> {
 
   public unsubscribeIndex(index: number, fn: (value: T | undefined) => void) {
     if (!this._indexListeners.has(index)) return;
-
     const listeners = this._indexListeners.get(index);
     if (listeners) {
       listeners.delete(fn);
