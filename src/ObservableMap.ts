@@ -105,8 +105,4 @@ export default class ObservableMap<
       yield await callback([k, this.getItem(k) as T]);
     }
   }
-
-  get [Symbol.toStringTag]() {
-    return "ObservableMap";
-  }
 }

@@ -102,8 +102,4 @@ export default class ObservableList<T> extends Observable<Array<T>> {
       yield await callback([i, this.getItem(i) as T]);
     }
   }
-
-  get [Symbol.toStringTag]() {
-    return "ObservableList";
-  }
 }
