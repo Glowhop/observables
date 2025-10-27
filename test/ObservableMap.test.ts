@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import ObservableMap from "../src/core/ObservableMap";
+import ObservableMap from "../src/ObservableMap";
 
 describe("ObservableMap", () => {
   it("notifies map and key subscribers when entries change", () => {

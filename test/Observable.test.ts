@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import Observable from "../src/core/Observable";
+import Observable from "../src/Observable";
 
 describe("Observable", () => {
   it("notifies every subscriber when the value changes", () => {
