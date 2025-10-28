@@ -100,10 +100,11 @@ var ObservableList = class extends Observable {
     this.notifyAllSubscribers();
   }
   ensureIndexListeners(index) {
+    const listeners = this._indexListeners.get(index) || /* @__PURE__ */ new Set();
     if (!this._indexListeners.has(index)) {
-      this._indexListeners.set(index, /* @__PURE__ */ new Set());
+      this._indexListeners.set(index, listeners);
     }
-    return this._indexListeners.get(index);
+    return listeners;
   }
   setEntry(index, value) {
     this._value[index] = resolve(value, this.getEntry(index));
@@ -189,10 +190,11 @@ var ObservableMap = class extends Observable {
     this.notifyAllSubscribers();
   }
   ensureKeyListeners(key) {
+    const listeners = this._keyListeners.get(key) || /* @__PURE__ */ new Set();
     if (!this._keyListeners.has(key)) {
-      this._keyListeners.set(key, /* @__PURE__ */ new Set());
+      this._keyListeners.set(key, listeners);
     }
-    return this._keyListeners.get(key);
+    return listeners;
   }
   set(value) {
     const next = resolve(value, this.get());
