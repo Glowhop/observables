@@ -10,7 +10,8 @@
       {
         "assets": [
           "package.json",
-          "bun.lock"
+          "bun.lock",
+          "dist/**/*"
         ],
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
