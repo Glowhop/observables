@@ -35,4 +35,8 @@ export default class Observable<T> extends Base<T> {
       fn(this.get());
     });
   }
+
+  get [Symbol.toStringTag]() {
+    return "Observable";
+  }
 }

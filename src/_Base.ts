@@ -17,10 +17,6 @@ export default abstract class Base<T> {
 
   public abstract emit(): void;
 
-  get [Symbol.toStringTag]() {
-    return "Observable";
-  }
-
   [Symbol.toPrimitive](hint: string) {
     if (hint === "number") return Number(this._value);
     if (hint === "string")
