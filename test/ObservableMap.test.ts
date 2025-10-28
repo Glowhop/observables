@@ -8,10 +8,10 @@ describe("ObservableMap", () => {
     const keyValues: Array<number | undefined> = [];
 
     map.subscribe((value) => mapSnapshots.push([...value.entries()]));
-    map.subscribeKey("id", (value) => keyValues.push(value));
+    map.subscribeEntry("id", (value) => keyValues.push(value));
 
     map.set([["id", 1]]);
-    map.setItem("id", (previous) => (previous ?? 0) + 4);
+    map.setEntry("id", (previous) => (previous ?? 0) + 4);
 
     expect(mapSnapshots).toEqual([[["id", 1]], [["id", 5]]]);
     expect(keyValues).toEqual([1, 5]);
@@ -23,11 +23,11 @@ describe("ObservableMap", () => {
     const mapSizes: number[] = [];
 
     map.subscribe((value) => mapSizes.push(value.size));
-    map.subscribeKey("id", (value) => keyValues.push(value));
+    map.subscribeEntry("id", (value) => keyValues.push(value));
 
     map.set([["id", 3]]);
-    map.removeItem("id");
-    map.removeItem("id"); // deleting a missing key is a no-op
+    map.removeEntry("id");
+    map.removeEntry("id"); // deleting a missing key is a no-op
 
     expect(keyValues).toEqual([3, undefined]);
     expect(mapSizes).toEqual([1, 0, 0]);
@@ -67,13 +67,13 @@ describe("ObservableMap", () => {
     const map = new ObservableMap<string, number>([]);
     const values: Array<number | undefined> = [];
 
-    const unsubscribe = map.subscribeKey("token", (value) =>
+    const unsubscribe = map.subscribeEntry("token", (value) =>
       values.push(value),
     );
 
-    map.setItem("token", 1);
+    map.setEntry("token", 1);
     unsubscribe();
-    map.setItem("token", 2);
+    map.setEntry("token", 2);
 
     expect(values).toEqual([1]);
   });

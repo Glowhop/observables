@@ -1,36 +1,47 @@
 import Observable from "./Observable";
 import { resolve } from "./utils";
 
+
+interface GetEntry<T> {
+  (index: number): T;
+  <W>(index: number, accessor: (value: T | undefined) => W): W;
+}
+
 export default class ObservableList<T> extends Observable<Array<T>> {
   private _indexListeners: Map<number, Set<(value: T | undefined) => void>> =
     new Map();
 
-  public emitIndexes() {
-    for (const [index, listeners] of this._indexListeners) {
-      listeners.forEach((fn) => {
-        fn(this.getItem(index));
-      });
-    }
-  }
 
-  public getItem(index: number): T | undefined {
+  public getEntry: GetEntry<T> = <W>(index: number, accessor?: (value: T | undefined) => W) => {
+    if (accessor) {
+      const val = this._value[index];
+      return accessor(val);
+    }
     return this._value[index];
   }
 
-  public setItem(index: number, value: T | ((value: T | undefined) => T)) {
-    this._value[index] = resolve(value, this.getItem(index));
-    this.emitIndex(index);
+  public setEntry(index: number, value: T | ((value: T | undefined) => T)) {
+    this._value[index] = resolve(value, this.getEntry(index));
+    this.emitEntry(index);
   }
 
-  public addItem(value: T) {
+  public addEntry(value: T) {
     this._value.push(value);
-    this.emitIndex(this._value.length - 1);
+    this.emitEntry(this._value.length - 1);
   }
 
-  public removeItem(index: number) {
+  public removeEntry(index: number) {
     if (index < 0 || index >= this._value.length) return;
     this._value.splice(index, 1);
-    this.emitIndex(index);
+    for (const [key, listeners] of this._indexListeners) {
+      if (key < index) continue;
+      listeners.forEach((fn) => {
+        fn(this.getEntry(key));
+      });
+    }
+    this._listeners.forEach((fn) => {
+      fn(this.get());
+    });
   }
 
   public clear() {
@@ -44,21 +55,21 @@ export default class ObservableList<T> extends Observable<Array<T>> {
     });
     for (const [key, listeners] of this._indexListeners) {
       listeners.forEach((fn) => {
-        fn(this.getItem(key));
+        fn(this.getEntry(key));
       });
     }
   }
 
-  public emitIndex(index: number) {
+  public emitEntry(index: number) {
     this._indexListeners.get(index)?.forEach((fn) => {
-      fn(this.getItem(index));
+      fn(this.getEntry(index));
     });
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
   }
 
-  public subscribeIndex(
+  public subscribeEntry(
     index: number,
     fn: (value: T | undefined) => void,
   ): () => void {
@@ -71,11 +82,11 @@ export default class ObservableList<T> extends Observable<Array<T>> {
       listeners.add(fn);
     }
     return () => {
-      this.unsubscribeIndex(index, fn);
+      this.unsubscribeEntry(index, fn);
     };
   }
 
-  public unsubscribeIndex(index: number, fn: (value: T | undefined) => void) {
+  public unsubscribeEntry(index: number, fn: (value: T | undefined) => void) {
     if (!this._indexListeners.has(index)) return;
     const listeners = this._indexListeners.get(index);
     if (listeners) {
@@ -85,18 +96,18 @@ export default class ObservableList<T> extends Observable<Array<T>> {
 
   *[Symbol.iterator]() {
     for (let i = 0; i < this._value.length; i++) {
-      yield this.getItem(i) as T;
+      yield this.getEntry(i) as T;
     }
   }
 
   *map<W>(callback: (entry: [number, T]) => W) {
     for (const [i] of this._value.entries()) {
-      yield callback([i, this.getItem(i) as T]);
+      yield callback([i, this.getEntry(i) as T]);
     }
   }
   async *mapAsync<W>(callback: (entry: [number, T]) => Promise<W>) {
     for (const [i] of this._value.entries()) {
-      yield await callback([i, this.getItem(i) as T]);
+      yield await callback([i, this.getEntry(i) as T]);
     }
   }
 

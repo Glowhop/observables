@@ -1,8 +1,14 @@
 import Observable from "./Observable";
 import { resolve } from "./utils";
 
+interface GetEntry<K, T> {
+  (key: K): T;
+  <W>(key: K, accessor: (value: T | undefined) => W): W;
+}
+
+
 export default class ObservableMap<
-  K extends string | number | bigint,
+  K,
   T,
 > extends Observable<Map<K, T>> {
   private _keyListeners: Map<K, Set<(value: T | undefined) => void>> =
@@ -22,9 +28,9 @@ export default class ObservableMap<
     super.set(v);
   }
 
-  public removeItem(key: K) {
+  public removeEntry(key: K) {
     this._value.delete(key);
-    this.emitKey(key);
+    this.emitEntry(key);
   }
 
   public clear() {
@@ -32,13 +38,17 @@ export default class ObservableMap<
     this.emit();
   }
 
-  public getItem(key: K) {
+  public getEntry: GetEntry<K, T> = <W>(key: K, accessor?: (value: T | undefined) => W) => {
+    if (accessor) {
+      const val = this._value.get(key);
+      return accessor(val);
+    }
     return this._value.get(key);
   }
 
-  public setItem(key: K, value: T | ((value: T | undefined) => T)) {
-    this._value.set(key, resolve(value, this.getItem(key)));
-    this.emitKey(key);
+  public setEntry(key: K, value: T | ((value: T | undefined) => T)) {
+    this._value.set(key, resolve(value, this.getEntry(key)));
+    this.emitEntry(key);
   }
 
   public emit() {
@@ -47,21 +57,24 @@ export default class ObservableMap<
     });
     for (const [key, listeners] of this._keyListeners) {
       listeners.forEach((fn) => {
-        fn(this.getItem(key));
+        fn(this.getEntry(key));
       });
     }
   }
 
-  public emitKey(key: K) {
+  public emitEntry(key: K) {
     this._keyListeners.get(key)?.forEach((fn) => {
-      fn(this.getItem(key));
+      fn(this.getEntry(key));
     });
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
   }
 
-  public subscribeKey(key: K, fn: (value: T | undefined) => void): () => void {
+  public subscribeEntry(
+    key: K,
+    fn: (value: T | undefined) => void,
+  ): () => void {
     if (!this._keyListeners.has(key)) {
       this._keyListeners.set(key, new Set());
     }
@@ -70,11 +83,11 @@ export default class ObservableMap<
       listeners.add(fn);
     }
     return () => {
-      this.unsubscribeKey(key, fn);
+      this.unsubscribeEntry(key, fn);
     };
   }
 
-  public unsubscribeKey(key: K, fn: (value: T | undefined) => void) {
+  public unsubscribeEntry(key: K, fn: (value: T | undefined) => void) {
     if (!this._keyListeners.has(key)) return;
     const listeners = this._keyListeners.get(key);
     if (listeners) {
@@ -84,18 +97,18 @@ export default class ObservableMap<
 
   *[Symbol.iterator]() {
     for (const [k] of this._value) {
-      yield [k, this.getItem(k) as T];
+      yield [k, this.getEntry(k) as T];
     }
   }
 
   *map<W>(callback: (entry: [K, T]) => W) {
     for (const [k] of this._value) {
-      yield callback([k, this.getItem(k) as T]);
+      yield callback([k, this.getEntry(k) as T]);
     }
   }
   async *mapAsync<W>(callback: (entry: [K, T]) => Promise<W>) {
     for (const [k] of this._value) {
-      yield await callback([k, this.getItem(k) as T]);
+      yield await callback([k, this.getEntry(k) as T]);
     }
   }
 
@@ -103,3 +116,6 @@ export default class ObservableMap<
     return "ObservableMap";
   }
 }
+
+
+

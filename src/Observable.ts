@@ -3,7 +3,7 @@ import { resolve } from "./utils";
 
 interface Get<T> {
   (): T;
-  <W>(callback: (value: T) => W): W;
+  <W>(accessor: (value: T) => W): W;
 }
 
 export default class Observable<T> extends Base<T> {
@@ -12,9 +12,9 @@ export default class Observable<T> extends Base<T> {
     this.emit();
   }
 
-  public get: Get<T> = <W>(callback?: (value: T) => W) => {
-    if (callback) {
-      return callback(this._value);
+  public get: Get<T> = <W>(accessor?: (value: T) => W) => {
+    if (accessor) {
+      return accessor(this._value);
     }
     return this._value;
   };

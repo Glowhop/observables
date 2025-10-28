@@ -5,7 +5,7 @@ Lightweight primitives for modelling observable values, lists, and maps in TypeS
 ## Features
 
 - Tiny, framework-agnostic `Observable`, `ObservableList`, and `ObservableMap` classes.
-- Ergonomic helpers for item-level subscriptions, iteration, and async mapping.
+- Ergonomic helpers for entry-level subscriptions, iteration, and async mapping.
 - Fully typed ESM and CommonJS builds with sourcemaps.
 
 ## Installation
@@ -40,20 +40,20 @@ unsubscribe();
 ### Working with collections
 
 ```ts
-import { ObservableList, ObservableMap } from "@glowhop/observables/core";
+import { ObservableList, ObservableMap } from "@glowhop/observables";
 
 const todos = new ObservableList(["add docs"]);
-todos.subscribeIndex(0, (value) => {
-	console.log("first todo:", value);
+todos.subscribeEntry(0, (value) => {
+  console.log("first todo:", value);
 });
 
-todos.addItem("ship release"); // first todo: add docs
-todos.setItem(0, "write README"); // first todo: write README
+todos.addEntry("ship release"); // first todo: add docs
+todos.setEntry(0, "write README"); // first todo: write README
 
 const settings = new ObservableMap([["theme", "dark"]]);
-settings.subscribeKey("theme", console.log);
-settings.setItem("theme", "light"); // light
-settings.removeItem("theme"); // undefined
+settings.subscribeEntry("theme", console.log);
+settings.setEntry("theme", "light"); // light
+settings.removeEntry("theme"); // undefined
 ```
 
 Refer to the TypeScript definitions in `dist/` or the source files in `src/` for the complete API surface. Since the API stays framework-neutral you can pair it with React, Vue, Solid, Svelte, or any custom renderer by wiring subscriptions into your own hooks/effects.
