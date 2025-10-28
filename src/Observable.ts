@@ -9,9 +9,10 @@ interface Get<T> {
 export default class Observable<T> extends Base<T> {
   public set(value: T | ((value: T) => T)) {
     this._value = resolve(value, this.get());
-    this.emit();
+    this.notify();
   }
 
+  // Allow consumers to read the value directly or derive another shape from it in a single pass.
   public get: Get<T> = <W>(accessor?: (value: T) => W) => {
     if (accessor) {
       return accessor(this._value);
@@ -30,12 +31,13 @@ export default class Observable<T> extends Base<T> {
     this._listeners.delete(fn);
   }
 
-  public emit() {
+  public notify() {
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
   }
 
+  // Keeps `Object.prototype.toString.call(new Observable())` descriptive.
   get [Symbol.toStringTag]() {
     return "Observable";
   }

@@ -49,13 +49,13 @@ describe("Observable", () => {
     expect(received).toEqual([1]);
   });
 
-  it("emits the latest value when emit is called explicitly", () => {
+  it("notifies the latest value when notify is called explicitly", () => {
     const observable = new Observable("initial");
     const received: string[] = [];
 
     observable.subscribe((value) => received.push(value));
 
-    observable.emit();
+    observable.notify();
 
     expect(received).toEqual(["initial"]);
   });

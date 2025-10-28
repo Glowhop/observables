@@ -10,9 +10,6 @@ var Base = class {
     this._value = value;
     this._listeners = /* @__PURE__ */ new Set();
   }
-  get [Symbol.toStringTag]() {
-    return "Observable";
-  }
   [Symbol.toPrimitive](hint) {
     if (hint === "number") return Number(this._value);
     if (hint === "string")
@@ -34,16 +31,17 @@ function resolve(next, prev) {
 var Observable = class extends Base {
   constructor() {
     super(...arguments);
-    __publicField(this, "get", (callback) => {
-      if (callback) {
-        return callback(this._value);
+    // Allow consumers to read the value directly or derive another shape from it in a single pass.
+    __publicField(this, "get", (accessor) => {
+      if (accessor) {
+        return accessor(this._value);
       }
       return this._value;
     });
   }
   set(value) {
     this._value = resolve(value, this.get());
-    this.emit();
+    this.notify();
   }
   subscribe(fn) {
     this._listeners.add(fn);
@@ -54,10 +52,14 @@ var Observable = class extends Base {
   unsubscribe(fn) {
     this._listeners.delete(fn);
   }
-  emit() {
+  notify() {
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
+  }
+  // Keeps `Object.prototype.toString.call(new Observable())` descriptive.
+  get [Symbol.toStringTag]() {
+    return "Observable";
   }
 };
 
@@ -66,65 +68,75 @@ var ObservableList = class extends Observable {
   constructor() {
     super(...arguments);
     __publicField(this, "_indexListeners", /* @__PURE__ */ new Map());
+    __publicField(this, "getEntry", (index, accessor) => {
+      const value = this._value[index];
+      return accessor ? accessor(value) : value;
+    });
   }
-  emitIndexes() {
-    for (const [index, listeners] of this._indexListeners) {
-      listeners.forEach((fn) => {
-        fn(this.getItem(index));
-      });
-    }
-  }
-  getItem(index) {
-    return this._value[index];
-  }
-  setItem(index, value) {
-    this._value[index] = resolve(value, this.getItem(index));
-    this.emitIndex(index);
-  }
-  addItem(value) {
-    this._value.push(value);
-    this.emitIndex(this._value.length - 1);
-  }
-  removeItem(index) {
-    if (index < 0 || index >= this._value.length) return;
-    this._value.splice(index, 1);
-    this.emitIndex(index);
-  }
-  clear() {
-    this._value = [];
-    this.emit();
-  }
-  emit() {
+  // Keeps the broadcast to list-wide subscribers in one place so we can ensure
+  // they only fire once per mutation.
+  notifyAllSubscribers() {
     this._listeners.forEach((fn) => {
       fn(this.get());
     });
-    for (const [key, listeners] of this._indexListeners) {
-      listeners.forEach((fn) => {
-        fn(this.getItem(key));
-      });
-    }
   }
-  emitIndex(index) {
+  // Emits the latest value for a particular index and mirrors the change to the
+  // aggregate listeners immediately after.
+  notifyEntrySubscribers(index) {
     this._indexListeners.get(index)?.forEach((fn) => {
-      fn(this.getItem(index));
+      fn(this.getEntry(index));
     });
-    this._listeners.forEach((fn) => {
-      fn(this.get());
-    });
+    this.notifyAllSubscribers();
   }
-  subscribeIndex(index, fn) {
+  // When an entry is removed, every following index shifts left; re-emit all of
+  // them so that consumers tracking a given position stay in sync.
+  notifyShiftedEntries(fromIndex) {
+    for (const [index, listeners] of this._indexListeners) {
+      if (index < fromIndex) continue;
+      listeners.forEach((fn) => {
+        fn(this.getEntry(index));
+      });
+    }
+    this.notifyAllSubscribers();
+  }
+  ensureIndexListeners(index) {
     if (!this._indexListeners.has(index)) {
       this._indexListeners.set(index, /* @__PURE__ */ new Set());
     }
-    const listeners = this._indexListeners.get(index);
-    if (listeners) {
-      listeners.add(fn);
+    return this._indexListeners.get(index);
+  }
+  setEntry(index, value) {
+    this._value[index] = resolve(value, this.getEntry(index));
+    this.notifyEntrySubscribers(index);
+  }
+  addEntry(value) {
+    this._value.push(value);
+    this.notifyEntrySubscribers(this._value.length - 1);
+  }
+  removeEntry(index) {
+    if (index < 0 || index >= this._value.length) return;
+    this._value.splice(index, 1);
+    this.notifyShiftedEntries(index);
+  }
+  clear() {
+    this._value = [];
+    this.notify();
+  }
+  notify() {
+    this.notifyAllSubscribers();
+    for (const [index, listeners] of this._indexListeners) {
+      listeners.forEach((fn) => {
+        fn(this.getEntry(index));
+      });
     }
+  }
+  subscribeEntry(index, fn) {
+    this.ensureIndexListeners(index).add(fn);
     return () => {
-      this.unsubscribeIndex(index, fn);
+      this.unsubscribeEntry(index, fn);
     };
   }
-  unsubscribeIndex(index, fn) {
+  unsubscribeEntry(index, fn) {
     if (!this._indexListeners.has(index)) return;
     const listeners = this._indexListeners.get(index);
     if (listeners) {
@@ -133,17 +145,17 @@ var ObservableList = class extends Observable {
   }
   *[Symbol.iterator]() {
     for (let i = 0; i < this._value.length; i++) {
-      yield this.getItem(i);
+      yield this.getEntry(i);
     }
   }
   *map(callback) {
     for (const [i] of this._value.entries()) {
-      yield callback([i, this.getItem(i)]);
+      yield callback([i, this.getEntry(i)]);
     }
   }
   async *mapAsync(callback) {
     for (const [i] of this._value.entries()) {
-      yield await callback([i, this.getItem(i)]);
+      yield await callback([i, this.getEntry(i)]);
     }
   }
   get [Symbol.toStringTag]() {
@@ -156,58 +168,66 @@ var ObservableMap = class extends Observable {
   constructor(rawValue) {
     super(Array.isArray(rawValue) ? new Map(rawValue) : rawValue);
     __publicField(this, "_keyListeners", /* @__PURE__ */ new Map());
+    __publicField(this, "getEntry", (key, accessor) => {
+      const value = this._value.get(key);
+      return accessor ? accessor(value) : value;
+    });
+  }
+  // Keeps the whole-map subscribers centralised so we do not accidentally
+  // notify them multiple times for the same mutation.
+  notifyAllSubscribers() {
+    this._listeners.forEach((fn) => {
+      fn(this.get());
+    });
+  }
+  // Make sure key-specific observers get the latest value before the map-wide
+  // subscribers so they always react to coherent data.
+  notifyEntrySubscribers(key) {
+    this._keyListeners.get(key)?.forEach((fn) => {
+      fn(this.getEntry(key));
+    });
+    this.notifyAllSubscribers();
+  }
+  ensureKeyListeners(key) {
+    if (!this._keyListeners.has(key)) {
+      this._keyListeners.set(key, /* @__PURE__ */ new Set());
+    }
+    return this._keyListeners.get(key);
   }
   set(value) {
     const next = resolve(value, this.get());
     const v = Array.isArray(next) ? new Map(next) : next;
     super.set(v);
   }
-  removeItem(key) {
-    this._value.delete(key);
-    this.emitKey(key);
+  // Remove the entry and only notify subscribers if something actually changed.
+  removeEntry(key) {
+    const didRemove = this._value.delete(key);
+    if (!didRemove) return;
+    this.notifyEntrySubscribers(key);
   }
   clear() {
     this._value.clear();
-    this.emit();
+    this.notify();
   }
-  getItem(key) {
-    return this._value.get(key);
+  setEntry(key, value) {
+    this._value.set(key, resolve(value, this.getEntry(key)));
+    this.notifyEntrySubscribers(key);
   }
-  setItem(key, value) {
-    this._value.set(key, resolve(value, this.getItem(key)));
-    this.emitKey(key);
-  }
-  emit() {
-    this._listeners.forEach((fn) => {
-      fn(this.get());
-    });
+  notify() {
+    this.notifyAllSubscribers();
     for (const [key, listeners] of this._keyListeners) {
       listeners.forEach((fn) => {
-        fn(this.getItem(key));
+        fn(this.getEntry(key));
       });
     }
   }
-  emitKey(key) {
-    this._keyListeners.get(key)?.forEach((fn) => {
-      fn(this.getItem(key));
-    });
-    this._listeners.forEach((fn) => {
-      fn(this.get());
-    });
-  }
-  subscribeKey(key, fn) {
-    if (!this._keyListeners.has(key)) {
-      this._keyListeners.set(key, /* @__PURE__ */ new Set());
-    }
-    const listeners = this._keyListeners.get(key);
-    if (listeners) {
-      listeners.add(fn);
-    }
+  subscribeEntry(key, fn) {
+    this.ensureKeyListeners(key).add(fn);
     return () => {
-      this.unsubscribeKey(key, fn);
+      this.unsubscribeEntry(key, fn);
     };
   }
-  unsubscribeKey(key, fn) {
+  unsubscribeEntry(key, fn) {
     if (!this._keyListeners.has(key)) return;
     const listeners = this._keyListeners.get(key);
     if (listeners) {
@@ -216,17 +236,17 @@ var ObservableMap = class extends Observable {
   }
   *[Symbol.iterator]() {
     for (const [k] of this._value) {
-      yield [k, this.getItem(k)];
+      yield [k, this.getEntry(k)];
     }
   }
   *map(callback) {
     for (const [k] of this._value) {
-      yield callback([k, this.getItem(k)]);
+      yield callback([k, this.getEntry(k)]);
     }
   }
   async *mapAsync(callback) {
     for (const [k] of this._value) {
-      yield await callback([k, this.getItem(k)]);
+      yield await callback([k, this.getEntry(k)]);
     }
   }
   get [Symbol.toStringTag]() {

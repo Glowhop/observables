@@ -30,7 +30,7 @@ describe("ObservableMap", () => {
     map.removeEntry("id"); // deleting a missing key is a no-op
 
     expect(keyValues).toEqual([3, undefined]);
-    expect(mapSizes).toEqual([1, 0, 0]);
+    expect(mapSizes).toEqual([1, 0]);
   });
 
   it("clears the collection and notifies general subscribers once", () => {

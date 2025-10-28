@@ -15,7 +15,7 @@ export default abstract class Base<T> {
 
   public abstract unsubscribe(fn: (value: T) => void): void;
 
-  public abstract emit(): void;
+  public abstract notify(): void;
 
   [Symbol.toPrimitive](hint: string) {
     if (hint === "number") return Number(this._value);

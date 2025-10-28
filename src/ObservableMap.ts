@@ -2,17 +2,38 @@ import Observable from "./Observable";
 import { resolve } from "./utils";
 
 interface GetEntry<K, T> {
-  (key: K): T;
+  (key: K): T | undefined;
   <W>(key: K, accessor: (value: T | undefined) => W): W;
 }
 
-
-export default class ObservableMap<
-  K,
-  T,
-> extends Observable<Map<K, T>> {
+export default class ObservableMap<K, T> extends Observable<Map<K, T>> {
   private _keyListeners: Map<K, Set<(value: T | undefined) => void>> =
     new Map();
+
+  // Keeps the whole-map subscribers centralised so we do not accidentally
+  // notify them multiple times for the same mutation.
+  private notifyAllSubscribers() {
+    this._listeners.forEach((fn) => {
+      fn(this.get());
+    });
+  }
+
+  // Make sure key-specific observers get the latest value before the map-wide
+  // subscribers so they always react to coherent data.
+  private notifyEntrySubscribers(key: K) {
+    this._keyListeners.get(key)?.forEach((fn) => {
+      fn(this.getEntry(key));
+    });
+    this.notifyAllSubscribers();
+  }
+
+  private ensureKeyListeners(key: K) {
+    const listeners = this._keyListeners.get(key) || new Set();
+    if (!this._keyListeners.has(key)) {
+      this._keyListeners.set(key, listeners);
+    }
+    return listeners;
+  }
 
   constructor(rawValue: [K, T][] | Map<K, T>) {
     super(Array.isArray(rawValue) ? new Map(rawValue) : rawValue);
@@ -28,33 +49,33 @@ export default class ObservableMap<
     super.set(v);
   }
 
+  // Remove the entry and only notify subscribers if something actually changed.
   public removeEntry(key: K) {
-    this._value.delete(key);
-    this.emitEntry(key);
+    const didRemove = this._value.delete(key);
+    if (!didRemove) return;
+    this.notifyEntrySubscribers(key);
   }
 
   public clear() {
     this._value.clear();
-    this.emit();
+    this.notify();
   }
 
-  public getEntry: GetEntry<K, T> = <W>(key: K, accessor?: (value: T | undefined) => W) => {
-    if (accessor) {
-      const val = this._value.get(key);
-      return accessor(val);
-    }
-    return this._value.get(key);
-  }
+  public getEntry: GetEntry<K, T> = <W>(
+    key: K,
+    accessor?: (value: T | undefined) => W,
+  ) => {
+    const value = this._value.get(key);
+    return accessor ? accessor(value) : value;
+  };
 
   public setEntry(key: K, value: T | ((value: T | undefined) => T)) {
     this._value.set(key, resolve(value, this.getEntry(key)));
-    this.emitEntry(key);
+    this.notifyEntrySubscribers(key);
   }
 
-  public emit() {
-    this._listeners.forEach((fn) => {
-      fn(this.get());
-    });
+  public notify() {
+    this.notifyAllSubscribers();
     for (const [key, listeners] of this._keyListeners) {
       listeners.forEach((fn) => {
         fn(this.getEntry(key));
@@ -62,26 +83,11 @@ export default class ObservableMap<
     }
   }
 
-  public emitEntry(key: K) {
-    this._keyListeners.get(key)?.forEach((fn) => {
-      fn(this.getEntry(key));
-    });
-    this._listeners.forEach((fn) => {
-      fn(this.get());
-    });
-  }
-
   public subscribeEntry(
     key: K,
     fn: (value: T | undefined) => void,
   ): () => void {
-    if (!this._keyListeners.has(key)) {
-      this._keyListeners.set(key, new Set());
-    }
-    const listeners = this._keyListeners.get(key);
-    if (listeners) {
-      listeners.add(fn);
-    }
+    this.ensureKeyListeners(key).add(fn);
     return () => {
       this.unsubscribeEntry(key, fn);
     };
@@ -116,6 +122,3 @@ export default class ObservableMap<
     return "ObservableMap";
   }
 }
-
-
-

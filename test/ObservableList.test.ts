@@ -8,10 +8,10 @@ describe("ObservableList", () => {
     const indexValues: Array<number | undefined> = [];
 
     list.subscribe((value) => listValues.push([...value]));
-    list.subscribeIndex(0, (value) => indexValues.push(value));
+    list.subscribeEntry(0, (value) => indexValues.push(value));
 
     list.set([2]);
-    list.setItem(0, (previous) => (previous ?? 0) + 3);
+    list.setEntry(0, (previous) => (previous ?? 0) + 3);
 
     expect(listValues).toEqual([[2], [5]]);
     expect(indexValues).toEqual([2, 5]);
@@ -23,24 +23,24 @@ describe("ObservableList", () => {
     const collectionSizes: number[] = [];
 
     list.subscribe((value) => collectionSizes.push(value.length));
-    list.subscribeIndex(0, (value) => indexValues.push(value));
+    list.subscribeEntry(0, (value) => indexValues.push(value));
 
-    list.addItem(10);
-    list.removeItem(0);
-    list.removeItem(0); // out of range, should be ignored
+    list.addEntry(10);
+    list.removeEntry(0);
+    list.removeEntry(0); // out of range, should be ignored
 
     expect(indexValues).toEqual([10, undefined]);
     expect(collectionSizes).toEqual([1, 0]);
   });
 
-  it("emits current index listeners through emitIndexes", () => {
+  it("notifies current index listeners through notify", () => {
     const list = new ObservableList([1, 2]);
     const indexValues: Array<number | undefined> = [];
 
-    list.subscribeIndex(0, (value) => indexValues.push(value));
+    list.subscribeEntry(0, (value) => indexValues.push(value));
 
-    list.setItem(0, 4);
-    list.emitIndexes();
+    list.setEntry(0, 4);
+    list.notify();
 
     expect(indexValues).toEqual([4, 4]);
   });
