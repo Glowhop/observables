@@ -96,7 +96,7 @@ describe("ObservableMap", () => {
       ["y", 7],
     ]);
 
-    const mapped = [...map.map(([key, value]) => `${key}:${value * 2}`)];
+    const mapped = [...map.map((value, key) => `${key}:${value * 2}`)];
 
     expect(mapped).toEqual(["x:10", "y:14"]);
   });
@@ -108,7 +108,7 @@ describe("ObservableMap", () => {
     ]);
     const results: string[] = [];
 
-    for await (const value of map.mapAsync(async ([key, val]) => {
+    for await (const value of map.mapAsync(async (val, key) => {
       return `${key}-${val + 1}`;
     })) {
       results.push(value);

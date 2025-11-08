@@ -103,18 +103,18 @@ export default class ObservableMap<K, T> extends Observable<Map<K, T>> {
 
   *[Symbol.iterator]() {
     for (const [k] of this._value) {
-      yield [k, this.getEntry(k) as T];
+      yield [k, this.getEntry(k) as T] as [K, T];
     }
   }
 
-  *map<W>(callback: (entry: [K, T]) => W) {
+  *map<W>(callback: (entry: T, key: K) => W) {
     for (const [k] of this._value) {
-      yield callback([k, this.getEntry(k) as T]);
+      yield callback(this.getEntry(k) as T, k);
     }
   }
-  async *mapAsync<W>(callback: (entry: [K, T]) => Promise<W>) {
+  async *mapAsync<W>(callback: (entry: T, key: K) => Promise<W>) {
     for (const [k] of this._value) {
-      yield await callback([k, this.getEntry(k) as T]);
+      yield await callback(this.getEntry(k) as T, k);
     }
   }
 

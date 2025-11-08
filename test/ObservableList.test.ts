@@ -67,7 +67,7 @@ describe("ObservableList", () => {
     const list = new ObservableList(["a", "b"]);
 
     const mapped = [
-      ...list.map(([index, value]) => `${index}:${value.toUpperCase()}`),
+      ...list.map((value, index) => `${index}:${value.toUpperCase()}`),
     ];
 
     expect(mapped).toEqual(["0:A", "1:B"]);
@@ -77,7 +77,7 @@ describe("ObservableList", () => {
     const list = new ObservableList(["x", "y"]);
     const results: string[] = [];
 
-    for await (const value of list.mapAsync(async ([index, entry]) => {
+    for await (const value of list.mapAsync(async (entry, index) => {
       return `${index}-${entry.repeat(2)}`;
     })) {
       results.push(value);

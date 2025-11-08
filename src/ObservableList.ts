@@ -109,14 +109,14 @@ export default class ObservableList<T> extends Observable<Array<T>> {
     }
   }
 
-  *map<W>(callback: (entry: [number, T]) => W) {
+  *map<W>(callback: (entry: T, index: number) => W) {
     for (const [i] of this._value.entries()) {
-      yield callback([i, this.getEntry(i) as T]);
+      yield callback(this.getEntry(i) as T, i);
     }
   }
-  async *mapAsync<W>(callback: (entry: [number, T]) => Promise<W>) {
+  async *mapAsync<W>(callback: (entry: T, index: number) => Promise<W>) {
     for (const [i] of this._value.entries()) {
-      yield await callback([i, this.getEntry(i) as T]);
+      yield await callback(this.getEntry(i) as T, i);
     }
   }
 
