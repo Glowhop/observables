@@ -1,4 +1,4 @@
-import Base from "./_Base";
+
 import { resolve } from "./utils";
 
 interface Get<T> {
@@ -6,7 +6,16 @@ interface Get<T> {
   <W>(accessor: (value: T) => W): W;
 }
 
-export default class Observable<T> extends Base<T> {
+export default class Observable<T> {
+
+  protected _listeners: Set<(value: T) => void>;
+  public _value: T;
+
+  constructor(value: T) {
+    this._value = value;
+    this._listeners = new Set();
+  }
+
   public set(value: T | ((value: T) => T)) {
     this._value = resolve(value, this.get());
     this.notify();
@@ -40,5 +49,14 @@ export default class Observable<T> extends Base<T> {
   // Keeps `Object.prototype.toString.call(new Observable())` descriptive.
   get [Symbol.toStringTag]() {
     return "Observable";
+  }
+
+  [Symbol.toPrimitive](hint: string) {
+    if (hint === "number") return Number(this._value);
+    if (hint === "string")
+      return typeof this._value === "object"
+        ? JSON.stringify(this._value)
+        : `${this._value}`;
+    return true;
   }
 }
