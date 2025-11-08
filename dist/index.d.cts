@@ -42,8 +42,8 @@ declare class ObservableList<T> extends Observable<Array<T>> {
     subscribeEntry(index: number, fn: (value: T | undefined) => void): () => void;
     unsubscribeEntry(index: number, fn: (value: T | undefined) => void): void;
     [Symbol.iterator](): Generator<T, void, unknown>;
-    map<W>(callback: (entry: [number, T]) => W): Generator<W, void, unknown>;
-    mapAsync<W>(callback: (entry: [number, T]) => Promise<W>): AsyncGenerator<Awaited<W>, void, unknown>;
+    map<W>(callback: (entry: T, index: number) => W): Generator<W, void, unknown>;
+    mapAsync<W>(callback: (entry: T, index: number) => Promise<W>): AsyncGenerator<Awaited<W>, void, unknown>;
     get [Symbol.toStringTag](): string;
 }
 
@@ -65,9 +65,9 @@ declare class ObservableMap<K, T> extends Observable<Map<K, T>> {
     notify(): void;
     subscribeEntry(key: K, fn: (value: T | undefined) => void): () => void;
     unsubscribeEntry(key: K, fn: (value: T | undefined) => void): void;
-    [Symbol.iterator](): Generator<(K | T)[], void, unknown>;
-    map<W>(callback: (entry: [K, T]) => W): Generator<W, void, unknown>;
-    mapAsync<W>(callback: (entry: [K, T]) => Promise<W>): AsyncGenerator<Awaited<W>, void, unknown>;
+    [Symbol.iterator](): Generator<[K, T], void, unknown>;
+    map<W>(callback: (entry: T, key: K) => W): Generator<W, void, unknown>;
+    mapAsync<W>(callback: (entry: T, key: K) => Promise<W>): AsyncGenerator<Awaited<W>, void, unknown>;
     get [Symbol.toStringTag](): string;
 }
 

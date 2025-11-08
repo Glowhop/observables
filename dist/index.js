@@ -151,12 +151,12 @@ var ObservableList = class extends Observable {
   }
   *map(callback) {
     for (const [i] of this._value.entries()) {
-      yield callback([i, this.getEntry(i)]);
+      yield callback(this.getEntry(i), i);
     }
   }
   async *mapAsync(callback) {
     for (const [i] of this._value.entries()) {
-      yield await callback([i, this.getEntry(i)]);
+      yield await callback(this.getEntry(i), i);
     }
   }
   get [Symbol.toStringTag]() {
@@ -243,12 +243,12 @@ var ObservableMap = class extends Observable {
   }
   *map(callback) {
     for (const [k] of this._value) {
-      yield callback([k, this.getEntry(k)]);
+      yield callback(this.getEntry(k), k);
     }
   }
   async *mapAsync(callback) {
     for (const [k] of this._value) {
-      yield await callback([k, this.getEntry(k)]);
+      yield await callback(this.getEntry(k), k);
     }
   }
   get [Symbol.toStringTag]() {
