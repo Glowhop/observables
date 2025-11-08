@@ -2,22 +2,6 @@ var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-// src/_Base.ts
-var Base = class {
-  constructor(value) {
-    __publicField(this, "_listeners");
-    __publicField(this, "_value");
-    this._value = value;
-    this._listeners = /* @__PURE__ */ new Set();
-  }
-  [Symbol.toPrimitive](hint) {
-    if (hint === "number") return Number(this._value);
-    if (hint === "string")
-      return typeof this._value === "object" ? JSON.stringify(this._value) : `${this._value}`;
-    return true;
-  }
-};
-
 // src/utils.ts
 function resolve(next, prev) {
   if (next instanceof Function) {
@@ -28,9 +12,10 @@ function resolve(next, prev) {
 }
 
 // src/Observable.ts
-var Observable = class extends Base {
-  constructor() {
-    super(...arguments);
+var Observable = class {
+  constructor(value) {
+    __publicField(this, "_listeners");
+    __publicField(this, "_value");
     // Allow consumers to read the value directly or derive another shape from it in a single pass.
     __publicField(this, "get", (accessor) => {
       if (accessor) {
@@ -38,6 +23,8 @@ var Observable = class extends Base {
       }
       return this._value;
     });
+    this._value = value;
+    this._listeners = /* @__PURE__ */ new Set();
   }
   set(value) {
     this._value = resolve(value, this.get());
@@ -60,6 +47,12 @@ var Observable = class extends Base {
   // Keeps `Object.prototype.toString.call(new Observable())` descriptive.
   get [Symbol.toStringTag]() {
     return "Observable";
+  }
+  [Symbol.toPrimitive](hint) {
+    if (hint === "number") return Number(this._value);
+    if (hint === "string")
+      return typeof this._value === "object" ? JSON.stringify(this._value) : `${this._value}`;
+    return true;
   }
 };
 

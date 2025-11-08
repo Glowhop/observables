@@ -1,26 +1,18 @@
-declare abstract class Base<T> {
-    protected _listeners: Set<(value: T) => void>;
-    _value: T;
-    constructor(value: T);
-    abstract set(value: T | ((value: T) => T)): void;
-    abstract get(): T;
-    abstract subscribe(fn: (value: T) => void): () => void;
-    abstract unsubscribe(fn: (value: T) => void): void;
-    abstract notify(): void;
-    [Symbol.toPrimitive](hint: string): string | number | true;
-}
-
 interface Get<T> {
     (): T;
     <W>(accessor: (value: T) => W): W;
 }
-declare class Observable<T> extends Base<T> {
+declare class Observable<T> {
+    protected _listeners: Set<(value: T) => void>;
+    _value: T;
+    constructor(value: T);
     set(value: T | ((value: T) => T)): void;
     get: Get<T>;
     subscribe(fn: (value: T) => void): () => void;
     unsubscribe(fn: (value: T) => void): void;
     notify(): void;
     get [Symbol.toStringTag](): string;
+    [Symbol.toPrimitive](hint: string): string | number | true;
 }
 
 interface GetEntry$1<T> {
